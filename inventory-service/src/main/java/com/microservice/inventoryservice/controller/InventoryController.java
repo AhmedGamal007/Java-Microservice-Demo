@@ -1,9 +1,12 @@
 package com.microservice.inventoryservice.controller;
 
+import com.microservice.inventoryservice.dto.InventoryDto;
 import com.microservice.inventoryservice.dto.InventoryResponse;
+import com.microservice.inventoryservice.dto.ResponseModel;
 import com.microservice.inventoryservice.service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,13 +27,19 @@ public class InventoryController {
     @PatchMapping
     @ResponseStatus(HttpStatus.OK)
     public String orderAddedSucessfully(@RequestBody Map<String,String> orderAndQuantity){
-    inventoryService.orderAddedSucessfully(orderAndQuantity);
-    return "Order Added Sucessfully";
+        inventoryService.orderAddedSucessfully(orderAndQuantity);
+        return "Order Added Successfully";
     }
 
-    @PostMapping
+    @PutMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
     public List<InventoryResponse> isInStockAndQuantity(@RequestBody Map<String,String> orderAndQuantity){
         return inventoryService.isInStock(orderAndQuantity);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Boolean createProductInventory(@RequestBody InventoryDto inventoryDto){
+        return inventoryService.createProductInventory(inventoryDto);
     }
 }

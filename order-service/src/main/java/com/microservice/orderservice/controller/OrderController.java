@@ -1,6 +1,7 @@
 package com.microservice.orderservice.controller;
 
 import com.microservice.orderservice.dto.OrderRequest;
+import com.microservice.orderservice.dto.ResponseModel;
 import com.microservice.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,7 @@ public class OrderController {
     private final OrderService orderService;
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest){
+    public ResponseModel placeOrder(@RequestBody OrderRequest orderRequest){
         log.info("place Order Controller");
         return orderService.placeOrder(orderRequest);
     }

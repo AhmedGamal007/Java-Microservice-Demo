@@ -3,10 +3,12 @@ package com.microservice.orderservice.service;
 import com.microservice.orderservice.dto.InventoryResponse;
 import com.microservice.orderservice.dto.OrderLineItemsDto;
 import com.microservice.orderservice.dto.OrderRequest;
+import com.microservice.orderservice.dto.ResponseModel;
 import com.microservice.orderservice.model.Order;
 import com.microservice.orderservice.model.OrderLineItems;
 import com.microservice.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.*;
 
 import static io.netty.handler.codec.http.HttpHeaders.Values.APPLICATION_JSON;
@@ -23,13 +26,15 @@ import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class OrderService {
 
     private final OrderRepository orderRepository;
 
     private final WebClient.Builder webClientBuilder;
 
-    public ResponseEntity<String> placeOrder(OrderRequest orderRequest){
+
+    public ResponseModel placeOrder(OrderRequest orderRequest){
         Order order = new Order();
         order.setOrderNumber(UUID.randomUUID().toString());
 
@@ -45,27 +50,71 @@ public class OrderService {
         System.out.println(order.getOrderLineItemsList());
         System.out.println(orderAndQuantity);
         //Call Inventory Service and place order if product is in stock
-        InventoryResponse[] inventoryResponseArray = webClientBuilder.build().post().uri("http://localhost:8085/api/inventory")
-                .body(Mono.just(orderAndQuantity),Map.class)
-                .header(CONTENT_TYPE, APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(InventoryResponse[].class)
-                .block();
-
-        boolean allProductsInStock = Arrays.stream(inventoryResponseArray).allMatch(inventoryResponse -> inventoryResponse.getIsInStock());
-        if(allProductsInStock) {
-            orderRepository.save(order);
-            return ResponseEntity.ok().body(
-                    webClientBuilder.build().patch().uri("http://localhost:8085/api/inventory")
-                            .body(Mono.just(orderAndQuantity),Map.class)
-                            .header(CONTENT_TYPE, APPLICATION_JSON)
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .block());
+        InventoryResponse[] inventoryResponseArray;
+        try {
+            inventoryResponseArray = webClientBuilder.build().put().uri("http://localhost:8085/api/inventory")
+                    .body(Mono.just(orderAndQuantity),Map.class)
+                    .header(CONTENT_TYPE, APPLICATION_JSON)
+                    .retrieve()
+                    .bodyToMono(InventoryResponse[].class)
+                    .block();
+        } catch (Exception ex){
+            ex.printStackTrace();
+            log.info("Order Service PUT Call to Inventory Service placeOrder Method!");
+            return ResponseModel
+                    .builder()
+                    .code(1999)
+                    .message(ex.getMessage())
+                    .build();
 
         }
+        boolean allProductsInStock = Arrays.stream(inventoryResponseArray).allMatch(inventoryResponse -> inventoryResponse.getIsInStock());
+        if(allProductsInStock) {
+            try {
+                orderRepository.save(order);
+            } catch (Exception ex){
+                ex.printStackTrace();
+                log.info("Saving order in order service in place order method! (DB Error)");
+                return ResponseModel
+                        .builder()
+                        .code(999)
+                        .message(ex.getMessage())
+                        .build();
+            }
+            try {
+                return ResponseModel
+                        .builder()
+                        .code(901)
+                        .message("CREATED")
+                        .data(
+                                webClientBuilder.build().patch().uri("http://localhost:8085/api/inventory")
+                                        .body(Mono.just(orderAndQuantity), Map.class)
+                                        .header(CONTENT_TYPE, APPLICATION_JSON)
+                                        .retrieve()
+                                        .bodyToMono(String.class)
+                                        .block()
+                        )
+                        .build();
+            } catch (Exception ex){
+                ex.printStackTrace();
+                log.info("Order Service PATCH Call to Inventory Service placeOrder Method!");
+                return ResponseModel
+                        .builder()
+                        .code(1999)
+                        .message(ex.getMessage())
+                        .build();
+            }
+
+            // TNS-??? Listener Exception
+            // ORA-??? Database Engine Exception Internal External Implicit Explicit
+        }
         else{
-            return ResponseEntity.badRequest().body("Product is not in stock, Please try again later.");
+            return ResponseModel
+                    .builder()
+                    .code(899)
+                    .message("OUTAGE")
+                    .data("Product is not in stock, Please try again later.")
+                    .build();
         }
     }
     private OrderLineItems mapToDto(OrderLineItemsDto orderLineItemsDto){

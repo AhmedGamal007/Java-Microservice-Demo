@@ -2,8 +2,10 @@ package com.microservice.productservice.controller;
 
 import com.microservice.productservice.dto.ProductRequest;
 import com.microservice.productservice.dto.ProductResponse;
+import com.microservice.productservice.dto.ResponseModel;
 import com.microservice.productservice.service.ProductService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,13 +23,13 @@ public class ProductController {
     @PostMapping
     @CrossOrigin
     @ResponseStatus(HttpStatus.CREATED)
-    public void createProduct(@RequestBody ProductRequest productRequest){
-        productService.createProduct(productRequest);
+    public ResponseModel createProduct(@RequestBody ProductRequest productRequest){
+        return productService.createProduct(productRequest);
     }
     @GetMapping
     @CrossOrigin
     @ResponseStatus(HttpStatus.OK)
-    public List<ProductResponse> getAllProducts(){
+    public ResponseModel getAllProducts(){
        return productService.getAllProducts();
     }
 }
