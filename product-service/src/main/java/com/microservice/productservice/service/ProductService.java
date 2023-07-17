@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,8 @@ public class ProductService {
 //    }
     @Autowired
     private final ProductRepository productRepository;
+
+
     @Autowired
     private WebClient.Builder webClientBuilder;
 
@@ -112,6 +115,7 @@ public class ProductService {
         return ProductResponse.builder()
                 .Id(product.getId())
                 .name(product.getName())
+                .skuCode(product.getName().toLowerCase().replace(" ", "_"))
                 .description(product.getDescription())
                 .price(product.getPrice())
                 .build();

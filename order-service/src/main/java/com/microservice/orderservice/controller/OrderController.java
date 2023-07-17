@@ -20,6 +20,7 @@ public class OrderController {
     private final OrderService orderService;
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @CrossOrigin
     public ResponseModel placeOrder(@RequestBody OrderRequest orderRequest){
         log.info("place Order Controller");
         return orderService.placeOrder(orderRequest);
