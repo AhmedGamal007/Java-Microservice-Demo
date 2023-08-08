@@ -29,6 +29,9 @@ import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 @Transactional
 public class ProductService {
 
+    @Value("${inventory-service-uri}")
+    private String inventoryUri;
+    //http://localhost:8085
 //    public ProductService(ProductRepository productRepository, WebClient.Builder webClientBuilder){
 //        this.productRepository = productRepository;
 //        this.webClientBuilder = webClientBuilder;
@@ -67,7 +70,7 @@ public class ProductService {
                 .build();
         Boolean inventoryFlag;
         try {
-            inventoryFlag = webClientBuilder.build().post().uri("http://localhost:8085/api/inventory")
+            inventoryFlag = webClientBuilder.build().post().uri(inventoryUri+"/api/inventory")
                     .body(Mono.just(inventoryDto), InventoryDto.class)
                     .header(CONTENT_TYPE, APPLICATION_JSON)
                     .retrieve()

@@ -9,6 +9,7 @@ import com.microservice.orderservice.model.OrderLineItems;
 import com.microservice.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,8 @@ import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 @Slf4j
 public class OrderService {
 
+    @Value("${inventory-service-uri}")
+    private String inventoryUri;
     private final OrderRepository orderRepository;
 
     private final WebClient.Builder webClientBuilder;
@@ -46,13 +49,15 @@ public class OrderService {
         order.setOrderLineItemsList(orderLineItems);
         Map<String, String> orderAndQuantity = new HashMap<>();
 
+        log.warn(inventoryUri);
+
         order.getOrderLineItemsList().stream().map(OrderLineItems->orderAndQuantity.put(OrderLineItems.getSkuCode(),OrderLineItems.getQuantityString())).toList();
         System.out.println(order.getOrderLineItemsList());
         System.out.println(orderAndQuantity);
         //Call Inventory Service and place order if product is in stock
         InventoryResponse[] inventoryResponseArray;
         try {
-            inventoryResponseArray = webClientBuilder.build().put().uri("http://localhost:8085/api/inventory")
+            inventoryResponseArray = webClientBuilder.build().put().uri(inventoryUri+"/api/inventory")
                     .body(Mono.just(orderAndQuantity),Map.class)
                     .header(CONTENT_TYPE, APPLICATION_JSON)
                     .retrieve()
@@ -87,7 +92,7 @@ public class OrderService {
                         .code(901)
                         .message("CREATED")
                         .data(
-                                webClientBuilder.build().patch().uri("http://localhost:8085/api/inventory")
+                                webClientBuilder.build().patch().uri(inventoryUri+"/api/inventory")
                                         .body(Mono.just(orderAndQuantity), Map.class)
                                         .header(CONTENT_TYPE, APPLICATION_JSON)
                                         .retrieve()
